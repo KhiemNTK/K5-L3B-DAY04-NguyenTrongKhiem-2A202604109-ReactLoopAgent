@@ -47,7 +47,7 @@ Nguồn: `eval_before.json`, phần tử có `id` là `H7` trong `cases`, trư�
 
 Trong cùng trace, tool GitHub trả component `Actions` là `operational` theo snapshot ngày 09/11/2026. Tool Cloudflare chỉ trả lỗi timeout, không có dữ liệu trạng thái. Vì vậy, bằng chứng về GitHub không thể dùng để kết luận Cloudflare cũng hoạt động bình thường.
 
-Observation lỗi đã được chuyển lại cho model, thể hiện qua việc câu trả lời nhắc đến timeout. Vấn đề là agent vẫn chấp nhận câu trả lời cuối có kết luận trái với bằng chứng. Nhánh trả `completed` kiểm tra nội dung và URL nguồn, nhưng chưa kiểm tra khẳng định về provider không lấy được dữ liệu. `finish == 'stop'` chỉ cho biết model đã dừng, không chứng minh câu trả lời đúng.
+Observation lỗi đã được chuyển lại cho model, thể hiện qua việc câu trả lời nhắc đến timeout. Ở bản trước sửa, agent vẫn trả `completed` dù kết luận về Cloudflare mâu thuẫn với observation timeout. `finish == 'stop'` chỉ cho biết model đã dừng, không chứng minh câu trả lời đúng.
 
 ## 3. Thay đổi đã thực hiện
 
@@ -60,7 +60,7 @@ Observation lỗi đã được chuyển lại cho model, thể hiện qua việ
 
 Cách sửa này nhắm vào mâu thuẫn của H7: timeout không được biến thành kết luận operational hay outage. Không hard-code câu hỏi, ID case hoặc trạng thái của GitHub/Cloudflare.
 
-Kiểm tra nguồn của Bài 4 vẫn được giữ. Lời nhắc sửa nguồn nay gửi toàn bộ URL đã đọc và yêu cầu giữ nguồn cũ, tránh việc model thêm URL này rồi bỏ URL kia. Khi dữ liệu dẫn tới incident khác trên hai status host được hỗ trợ, agent ghi `validation_missing_incident` và yêu cầu đọc tiếp trước khi kết luận. Mỗi incident chỉ tính một lần thử để tránh vòng lặp; giới hạn `max_steps` không đổi.
+Kiểm tra nguồn của Bài 4 vẫn được giữ. Lời nhắc sửa nguồn nay gửi toàn bộ URL đã đọc và yêu cầu giữ nguồn cũ, tránh việc model thêm URL này rồi bỏ URL kia. Khi dữ liệu dẫn tới incident khác trên hai status host được hỗ trợ, agent ghi `validation_missing_incident` và yêu cầu đọc tiếp trước khi kết luận. Bước kiểm tra không yêu cầu đọc lại incident đã được thử; model vẫn có thể gọi lặp trong giới hạn `max_steps`.
 
 Prompt được làm rõ: muốn kết luận hiện trạng phải gọi `get_status`, còn incident đã resolved chỉ cho biết trạng thái của incident đó. Câu trả lời cần gọn và phân biệt thời điểm xảy ra với `updated_at`. Toàn bộ **61/61 test** đạt, gồm lỗi provider, kiểm tra nguồn, incident liên quan, liên kết không hợp lệ và giới hạn bước.
 
